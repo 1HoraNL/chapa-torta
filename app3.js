@@ -176,10 +176,10 @@ function sendToWhatsApp() {
     const isPastDeadline = isAfterDeadline();
 
     let message = '🚨🚨🚨🚨🚨🚨🚨🚨\n🫵🫵🫵🫵🫵🫵🫵🫵\n\n\n';
-    message += `📆 Data: ${date} (Dom)\n⏰ Horas: 07 às 09\n🎯 Quadra: JJ1\n\n`;
+    message += `📆 *Data: ${date} (Dom)*\n⏰ *Horas: 07 às 09*\n🎯 *Quadra: JJ1*\n\n`;
 
     if (!isPastDeadline) {
-        message += `⏳ *Prazo para confirmar: Sábado 14h*\n\n`;
+        message += `⏳ *Confirmar ate Sab às 14h*\n\n`;
     }
 
     message += `\n✅ Presentes:\n\n`;
@@ -206,7 +206,7 @@ function sendToWhatsApp() {
     }
 
     // Add link at the end
-    message += '\n\n🔗 *Confirme sua presença:*\n';
+    message += '\n\n🔗 *Confirme sua presença:*\n\n';
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
