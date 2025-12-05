@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapa Torta - Confirmação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Logo Section -->
+        <header class="main-header">
+            <img src="logo_final.jpg" alt="Futevôlei Chapa Torta" class="main-logo">
+        </header>
+
+        <main class="content-area">
+            <!-- Confirmation Section -->
+            <section id="confirmationSection">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-clipboard-list"></i> BORA CONFIRMAR?</h2>
+                    <p class="tab-subtitle game-time">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="nextGameInfo">Carregando...</span>
+                    </p>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-item">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Confirmados: <strong id="confirmedCount">0</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fa-solid fa-user-slash"></i>
+                        <span>Ausentes: <strong id="absentCount">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="instruction-text">
+                    <i class="fa-solid fa-hand-pointer"></i> Clique no seu nome para confirmar presença
+                </div>
+
+                <div class="roster-grid" id="rosterGrid">
+                    <!-- Players will be loaded here -->
+                </div>
+
+                <div class="actions-container">
+                    <button id="sendConfirmationBtn" class="btn-confirmation">
+                        <i class="fa-brands fa-whatsapp"></i> ENVIAR NO ZAP
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app3.js"></script>
+</body>
+
+</html>
