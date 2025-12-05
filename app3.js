@@ -176,10 +176,10 @@ function sendToWhatsApp() {
     const isPastDeadline = isAfterDeadline();
 
     let message = '🚨🚨🚨🚨🚨🚨🚨🚨\n🫵🫵🫵🫵🫵🫵🫵🫵\n\n\n';
-    message += `📆 *Data: ${date} (Dom)*\n⏰ *Horas: 07 às 09*\n🎯 *Quadra: JJ1*\n\n`;
+    message += `📆 *Data:* ${date} (Dom)\n⏰ *Horas:* 07 às 09\n🎯 *Quadra:* JJ1\n\n`;
 
     if (!isPastDeadline) {
-        message += `⏳ *Confirmar ate Sab às 14h*\n\n`;
+        message += `⏳ *Confirmar até Sáb. às 14h*\n\n`;
     }
 
     message += `\n✅ Presentes:\n\n`;
