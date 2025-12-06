@@ -13,12 +13,13 @@ const defaultRoster = [
 ];
 
 let currentGameId = null;
-let confirmedPlayers = new Set();
+let playerStatus = {}; // { playerName: 'confirmed' | 'absent' | null }
 
 // DOM Elements
 const rosterGrid = document.getElementById('rosterGrid');
 const confirmedCountSpan = document.getElementById('confirmedCount');
 const absentCountSpan = document.getElementById('absentCount');
+const noResponseCountSpan = document.getElementById('noResponseCount');
 const nextGameInfo = document.getElementById('nextGameInfo');
 const sendConfirmationBtn = document.getElementById('sendConfirmationBtn');
 
@@ -27,6 +28,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update game date
     const nextSundayDate = getNextSunday();
     nextGameInfo.textContent = `${nextSundayDate} | 07 às 09`;
+
+    // Initialize player status
+    defaultRoster.forEach(player => {
+        playerStatus[player] = null;
+    });
 
     // Initialize or get current game
     await initializeGame();
@@ -79,11 +85,13 @@ async function loadConfirmations() {
 
     const { data, error } = await supabase
         .from('confirmations')
-        .select('player_name')
+        .select('player_name, status')
         .eq('game_id', currentGameId);
 
     if (data) {
-        confirmedPlayers = new Set(data.map(c => c.player_name));
+        data.forEach(confirmation => {
+            playerStatus[confirmation.player_name] = confirmation.status;
+        });
         updateCounters();
     }
 }
@@ -112,30 +120,48 @@ function renderRoster() {
     rosterGrid.innerHTML = '';
 
     defaultRoster.forEach(player => {
-        const card = document.createElement('div');
-        card.className = 'player-card';
+        const row = document.createElement('div');
+        row.className = 'player-row';
 
-        if (confirmedPlayers.has(player)) {
-            card.classList.add('confirmed');
+        const status = playerStatus[player];
+        if (status === 'confirmed') {
+            row.classList.add('confirmed');
+        } else if (status === 'absent') {
+            row.classList.add('absent');
         }
 
-        card.innerHTML = `
-            <i class="player-icon ${confirmedPlayers.has(player) ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'}"></i>
+        row.innerHTML = `
             <span class="player-name">${player}</span>
+            <div class="player-actions">
+                <button class="btn-confirm ${status === 'confirmed' ? 'active' : ''}" data-player="${player}" data-action="confirm">
+                    <i class="fa-solid fa-check"></i> VOU
+                </button>
+                <button class="btn-absent ${status === 'absent' ? 'active' : ''}" data-player="${player}" data-action="absent">
+                    <i class="fa-solid fa-xmark"></i> NÃO VOU
+                </button>
+            </div>
         `;
 
-        card.addEventListener('click', () => toggleConfirmation(player));
+        // Add event listeners
+        const confirmBtn = row.querySelector('.btn-confirm');
+        const absentBtn = row.querySelector('.btn-absent');
 
-        rosterGrid.appendChild(card);
+        confirmBtn.addEventListener('click', () => setPlayerStatus(player, 'confirmed'));
+        absentBtn.addEventListener('click', () => setPlayerStatus(player, 'absent'));
+
+        rosterGrid.appendChild(row);
     });
 }
 
-// Toggle Confirmation
-async function toggleConfirmation(playerName) {
+// Set Player Status
+async function setPlayerStatus(playerName, status) {
     if (!currentGameId) return;
 
-    if (confirmedPlayers.has(playerName)) {
-        // Remove confirmation
+    const currentStatus = playerStatus[playerName];
+
+    // If clicking the same button, remove status
+    if (currentStatus === status) {
+        // Delete from database
         const { error } = await supabase
             .from('confirmations')
             .delete()
@@ -143,19 +169,22 @@ async function toggleConfirmation(playerName) {
             .eq('player_name', playerName);
 
         if (!error) {
-            confirmedPlayers.delete(playerName);
+            playerStatus[playerName] = null;
         }
     } else {
-        // Add confirmation
+        // Upsert (insert or update)
         const { error } = await supabase
             .from('confirmations')
-            .insert([{
+            .upsert([{
                 game_id: currentGameId,
-                player_name: playerName
-            }]);
+                player_name: playerName,
+                status: status
+            }], {
+                onConflict: 'game_id,player_name'
+            });
 
         if (!error) {
-            confirmedPlayers.add(playerName);
+            playerStatus[playerName] = status;
         }
     }
 
@@ -165,13 +194,34 @@ async function toggleConfirmation(playerName) {
 
 // Update Counters
 function updateCounters() {
-    confirmedCountSpan.textContent = confirmedPlayers.size;
-    absentCountSpan.textContent = defaultRoster.length - confirmedPlayers.size;
+    let confirmed = 0;
+    let absent = 0;
+    let noResponse = 0;
+
+    Object.values(playerStatus).forEach(status => {
+        if (status === 'confirmed') confirmed++;
+        else if (status === 'absent') absent++;
+        else noResponse++;
+    });
+
+    confirmedCountSpan.textContent = confirmed;
+    absentCountSpan.textContent = absent;
+    noResponseCountSpan.textContent = noResponse;
 }
 
 // Send to WhatsApp
 function sendToWhatsApp() {
-    const confirmed = Array.from(confirmedPlayers).sort();
+    const confirmed = [];
+    const absent = [];
+    const noResponse = [];
+
+    defaultRoster.forEach(player => {
+        const status = playerStatus[player];
+        if (status === 'confirmed') confirmed.push(player);
+        else if (status === 'absent') absent.push(player);
+        else noResponse.push(player);
+    });
+
     const date = getNextSunday();
     const isPastDeadline = isAfterDeadline();
 
@@ -182,9 +232,9 @@ function sendToWhatsApp() {
         message += `⏳ *Confirmar até Sáb. às 14h*\n\n`;
     }
 
-    message += `\n✅ Presentes:\n\n`;
+    message += `\n✅ *Confirmados:*\n\n`;
 
-    confirmed.forEach((name, index) => {
+    confirmed.sort().forEach((name, index) => {
         message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
     });
 
@@ -192,17 +242,20 @@ function sendToWhatsApp() {
         message += `${String(i + 1).padStart(2, '0')}-\n`;
     }
 
-    // Only show absent after deadline
-    if (isPastDeadline) {
-        const absent = defaultRoster.filter(p => !confirmedPlayers.has(p)).sort();
-        message += '\n\n❌ Ausentes\n\n';
-        absent.forEach((name, index) => {
+    // Show absent (people who explicitly said they won't come)
+    if (absent.length > 0) {
+        message += '\n\n❌ *Ausentes confirmados:*\n\n';
+        absent.sort().forEach((name, index) => {
             message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
         });
+    }
 
-        for (let i = absent.length; i < 5; i++) {
-            message += `${String(i + 1).padStart(2, '0')}-\n`;
-        }
+    // After deadline, show who didn't respond
+    if (isPastDeadline && noResponse.length > 0) {
+        message += '\n\n⚪ *Sem resposta:*\n\n';
+        noResponse.sort().forEach((name, index) => {
+            message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
+        });
     }
 
     // Add link at the end
