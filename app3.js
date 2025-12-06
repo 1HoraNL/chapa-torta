@@ -226,35 +226,39 @@ function sendToWhatsApp() {
     const isPastDeadline = isAfterDeadline();
 
     let message = '🚨🚨🚨🚨🚨🚨🚨🚨\n🫵🫵🫵🫵🫵🫵🫵🫵\n\n\n';
-    message += `📆 *Data:* ${date} (Dom)\n⏰ *Horas:* 07 às 09\n🎯 *Quadra:* JJ1\n\n`;
+    message += '📆 *Data:* ' + date + ' (Dom)\n⏰ *Horas:* 07 às 09\n🎯 *Quadra:* JJ1\n\n';
 
     if (!isPastDeadline) {
-        message += `⏳ *Confirmar até Sáb. às 14h*\n\n`;
+        message += '⏳ *Confirmar até Sáb. às 14h*\n\n';
     }
 
-    message += `\n✅ *Confirmados:*\n\n`;
+    message += '\n✅ *Confirmados:*\n\n';
 
     confirmed.sort().forEach((name, index) => {
-        message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
+        const num = String(index + 1).padStart(2, '0');
+        message += num + '- ' + name + '\n';
     });
 
     for (let i = confirmed.length; i < 10; i++) {
-        message += `${String(i + 1).padStart(2, '0')}-\n`;
+        const num = String(i + 1).padStart(2, '0');
+        message += num + '-\n';
     }
 
     // Show absent (people who explicitly said they won't come)
     if (absent.length > 0) {
-        message += '\n\n❌ *Ausentes confirmados:*\n\n';
+        message += '\n\n❌ *Ausentes:*\n\n';
         absent.sort().forEach((name, index) => {
-            message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
+            const num = String(index + 1).padStart(2, '0');
+            message += num + '- ' + name + '\n';
         });
     }
 
-    // After deadline, show who didn't respond
-    if (isPastDeadline && noResponse.length > 0) {
-        message += '\n\n⚪ *Sem resposta:*\n\n';
+    // Show who didn't respond
+    if (noResponse.length > 0) {
+        message += '\n\n⚪ *Sem confirmação:*\n\n';
         noResponse.sort().forEach((name, index) => {
-            message += `${String(index + 1).padStart(2, '0')}- ${name}\n`;
+            const num = String(index + 1).padStart(2, '0');
+            message += num + '- ' + name + '\n';
         });
     }
 
@@ -262,7 +266,7 @@ function sendToWhatsApp() {
     message += '\n\n🔗 *Confirme sua presença:*\n\n';
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
     window.open(whatsappUrl, '_blank');
 }
 
@@ -289,7 +293,7 @@ function getNextSunday() {
 
     const day = String(nextSunday.getDate()).padStart(2, '0');
     const month = String(nextSunday.getMonth() + 1).padStart(2, '0');
-    return `${day}/${month}`;
+    return day + '/' + month;
 }
 
 // Get Next Sunday (YYYY-MM-DD format for database)
@@ -303,7 +307,7 @@ function getNextSundayFull() {
     const year = nextSunday.getFullYear();
     const month = String(nextSunday.getMonth() + 1).padStart(2, '0');
     const day = String(nextSunday.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return year + '-' + month + '-' + day;
 }
 
 // Get Next Sunday as Date object
