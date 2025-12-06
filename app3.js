@@ -267,7 +267,9 @@ function sendToWhatsApp() {
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
-    window.open(whatsappUrl, '_blank');
+
+    // Use location.href instead of window.open for better mobile compatibility
+    window.location.href = whatsappUrl;
 }
 
 // Check if current time is after Saturday 14h
