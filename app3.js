@@ -226,48 +226,48 @@ function sendToWhatsApp() {
     const isPastDeadline = isAfterDeadline();
 
     // Using simple, universally compatible emojis
-    let message = '*Chapa Torta - Confirmação*\\n\\n';
-    message += '⚽⚽⚽⚽⚽⚽⚽⚽\\n⚽⚽⚽⚽⚽⚽⚽⚽\\n\\n\\n';
-    message += '📅 *Data:* ' + date + ' (Dom)\\n';
-    message += '⏰ *Horas:* 07 às 09\\n';
-    message += '🏟 *Quadra:* JJ1\\n\\n';
+    let message = '*Chapa Torta - Confirmação*\n\n';
+    message += '⚽⚽⚽⚽⚽⚽⚽⚽\n⚽⚽⚽⚽⚽⚽⚽⚽\n\n\n';
+    message += '📅 *Data:* ' + date + ' (Dom)\n';
+    message += '⏰ *Horas:* 07 às 09\n';
+    message += '🏟 *Quadra:* JJ1\n\n';
 
     if (!isPastDeadline) {
-        message += '⏳ *Confirmar até Sáb. às 14h*\\n\\n';
+        message += '⏳ *Confirmar até Sáb. às 14h*\n\n';
     }
 
-    message += '\\n✅ *Confirmados:*\\n\\n';
+    message += '\n✅ *Confirmados:*\n\n';
 
     confirmed.sort().forEach((name, index) => {
         const num = String(index + 1).padStart(2, '0');
-        message += num + '- ' + name + '\\n';
+        message += num + '- ' + name + '\n';
     });
 
     for (let i = confirmed.length; i < 10; i++) {
         const num = String(i + 1).padStart(2, '0');
-        message += num + '-\\n';
+        message += num + '-\n';
     }
 
     // Show absent (people who explicitly said they won't come)
     if (absent.length > 0) {
-        message += '\\n\\n❌ *Ausentes:*\\n\\n';
+        message += '\n\n❌ *Ausentes:*\n\n';
         absent.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
-            message += num + '- ' + name + '\\n';
+            message += num + '- ' + name + '\n';
         });
     }
 
     // Show who didn't respond
     if (noResponse.length > 0) {
-        message += '\\n\\n⚪ *Sem confirmação:*\\n\\n';
+        message += '\n\n⚪ *Sem confirmação:*\n\n';
         noResponse.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
-            message += num + '- ' + name + '\\n';
+            message += num + '- ' + name + '\n';
         });
     }
 
     // Add link at the end
-    message += '\\n\\n🔗 *Confirme sua presença:*\\n\\n';
+    message += '\n\n🔗 *Confirme sua presença:*\n\n';
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
