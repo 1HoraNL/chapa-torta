@@ -113,6 +113,11 @@ body {
     color: var(--success);
 }
 
+.status-item.waitlist i,
+.status-item.waitlist strong {
+    color: #FF9500;
+}
+
 .status-item.absent i,
 .status-item.absent strong {
     color: var(--danger);

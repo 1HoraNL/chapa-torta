@@ -14,10 +14,12 @@ const defaultRoster = [
 
 let currentGameId = null;
 let playerStatus = {}; // { playerName: 'confirmed' | 'absent' | null }
+let confirmedQueue = []; // List of confirmed players in order of confirmation time
 
 // DOM Elements
 const rosterGrid = document.getElementById('rosterGrid');
 const confirmedCountSpan = document.getElementById('confirmedCount');
+const waitlistCountSpan = document.getElementById('waitlistCount');
 const absentCountSpan = document.getElementById('absentCount');
 const noResponseCountSpan = document.getElementById('noResponseCount');
 const nextGameInfo = document.getElementById('nextGameInfo');
@@ -85,12 +87,22 @@ async function loadConfirmations() {
 
     const { data, error } = await supabase
         .from('confirmations')
-        .select('player_name, status')
-        .eq('game_id', currentGameId);
+        .select('player_name, status, created_at')
+        .eq('game_id', currentGameId)
+        .order('created_at', { ascending: true });
 
     if (data) {
+        confirmedQueue = []; // Reset queue
+        playerStatus = {}; // Reset status map
+
+        // Reset to initial null state first
+        defaultRoster.forEach(player => playerStatus[player] = null);
+
         data.forEach(confirmation => {
             playerStatus[confirmation.player_name] = confirmation.status;
+            if (confirmation.status === 'confirmed') {
+                confirmedQueue.push(confirmation.player_name);
+            }
         });
         updateCounters();
     }
@@ -119,19 +131,27 @@ function setupRealtimeSubscription() {
 function renderRoster() {
     rosterGrid.innerHTML = '';
 
+    const { mainList, waitList } = getSplitLists();
+
     defaultRoster.forEach(player => {
         const row = document.createElement('div');
         row.className = 'player-row';
 
         const status = playerStatus[player];
+        let statusLabel = '';
+
         if (status === 'confirmed') {
             row.classList.add('confirmed');
+            if (waitList.includes(player)) {
+                statusLabel = ' (Excedente)';
+                row.style.border = '1px solid #FF9500'; // Visual clue for waitlist
+            }
         } else if (status === 'absent') {
             row.classList.add('absent');
         }
 
         row.innerHTML = `
-            <span class="player-name">${player}</span>
+            <span class="player-name">${player}${statusLabel}</span>
             <div class="player-actions">
                 <button class="btn-confirm ${status === 'confirmed' ? 'active' : ''}" data-player="${player}" data-action="confirm">
                     <i class="fa-solid fa-check"></i> VOU
@@ -153,6 +173,13 @@ function renderRoster() {
     });
 }
 
+// Helper to split confirmed list
+function getSplitLists() {
+    const mainList = confirmedQueue.slice(0, 10);
+    const waitList = confirmedQueue.slice(10);
+    return { mainList, waitList };
+}
+
 // Set Player Status
 async function setPlayerStatus(playerName, status) {
     if (!currentGameId) return;
@@ -172,54 +199,62 @@ async function setPlayerStatus(playerName, status) {
             playerStatus[playerName] = null;
         }
     } else {
-        // Upsert (insert or update)
+        // Delete first to ensure new created_at timestamp (move to end of queue)
+        await supabase
+            .from('confirmations')
+            .delete()
+            .eq('game_id', currentGameId)
+            .eq('player_name', playerName);
+
+        // Insert new record
         const { error } = await supabase
             .from('confirmations')
-            .upsert([{
+            .insert([{
                 game_id: currentGameId,
                 player_name: playerName,
                 status: status
-            }], {
-                onConflict: 'game_id,player_name'
-            });
+            }]);
 
         if (!error) {
             playerStatus[playerName] = status;
         }
     }
 
+    await loadConfirmations(); // Reload to get fresh server order
     renderRoster();
-    updateCounters();
 }
 
 // Update Counters
 function updateCounters() {
-    let confirmed = 0;
+    const { mainList, waitList } = getSplitLists();
     let absent = 0;
     let noResponse = 0;
 
-    Object.values(playerStatus).forEach(status => {
-        if (status === 'confirmed') confirmed++;
-        else if (status === 'absent') absent++;
-        else noResponse++;
+    defaultRoster.forEach(player => {
+        const status = playerStatus[player];
+        if (status === 'absent') absent++;
+        else if (status !== 'confirmed') noResponse++;
     });
 
-    confirmedCountSpan.textContent = confirmed;
+    confirmedCountSpan.textContent = mainList.length;
+    waitlistCountSpan.textContent = waitList.length;
     absentCountSpan.textContent = absent;
     noResponseCountSpan.textContent = noResponse;
+
+    // Update Draw Section too if needed
+    updateDrawSection();
 }
 
 // Send to WhatsApp
 function sendToWhatsApp() {
-    const confirmed = [];
+    const { mainList, waitList } = getSplitLists();
     const absent = [];
     const noResponse = [];
 
     defaultRoster.forEach(player => {
         const status = playerStatus[player];
-        if (status === 'confirmed') confirmed.push(player);
-        else if (status === 'absent') absent.push(player);
-        else noResponse.push(player);
+        if (status === 'absent') absent.push(player);
+        else if (status !== 'confirmed') noResponse.push(player);
     });
 
     const date = getNextSunday();
@@ -237,20 +272,29 @@ function sendToWhatsApp() {
 
     message += '\n*Confirmados:*\n';
 
-    confirmed.sort().forEach((name, index) => {
+    mainList.forEach((name, index) => {
         const num = String(index + 1).padStart(2, '0');
         message += num + '- ' + name + '\n';
     });
 
-    for (let i = confirmed.length; i < 10; i++) {
+    for (let i = mainList.length; i < 10; i++) {
         const num = String(i + 1).padStart(2, '0');
         message += num + '-\n';
     }
 
-    // Show absent (people who explicitly said they won't come)
+    // Show absent 
     if (absent.length > 0) {
         message += '\n*Ausentes:*\n';
         absent.sort().forEach((name, index) => {
+            const num = String(index + 1).padStart(2, '0');
+            message += num + '- ' + name + '\n';
+        });
+    }
+
+    // Show Excedentes (Waitlist) AFTER Absents as requested
+    if (waitList.length > 0) {
+        message += '\n*Excedentes:*\n';
+        waitList.forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
         });
@@ -270,8 +314,6 @@ function sendToWhatsApp() {
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
-
-    // Use location.href instead of window.open for better mobile compatibility
 
     window.location.href = whatsappUrl;
 }
@@ -367,12 +409,12 @@ navTabs.forEach(tab => {
 
 // Update Draw Section Info
 function updateDrawSection() {
-    const confirmedPlayers = getConfirmedPlayers();
-    playersForDrawCount.textContent = confirmedPlayers.length;
+    const { mainList } = getSplitLists();
+    playersForDrawCount.textContent = mainList.length;
 
     // Show names of confirmed players
-    if (confirmedPlayers.length > 0) {
-        confirmedPlayersList.innerHTML = confirmedPlayers.map(player =>
+    if (mainList.length > 0) {
+        confirmedPlayersList.innerHTML = mainList.map(player =>
             `<span class="confirmed-player-tag">${player}</span>`
         ).join('');
     } else {
@@ -393,7 +435,7 @@ generateTeamsBtn.addEventListener('click', () => {
     const audio = new Audio('peido.mp3');
     audio.play().catch(e => console.log('Audio play failed:', e));
 
-    const players = getConfirmedPlayers();
+    const { mainList: players } = getSplitLists();
 
     if (players.length < 2) {
         alert('É necessário pelo menos 2 jogadores confirmados para realizar o sorteio!');
@@ -408,7 +450,6 @@ generateTeamsBtn.addEventListener('click', () => {
     }
 
     // Generate Teams (Duplas)
-    // Generate Teams (Duplas)
     const teams = [];
     while (shuffled.length > 0) {
         // Sempre faz duplas (ou um sozinho se sobrar)
@@ -421,10 +462,6 @@ generateTeamsBtn.addEventListener('click', () => {
 // Display Teams
 function displayTeams(teams) {
     teamsResult.innerHTML = '';
-
-    // Create games (Team 1 vs Team 2, etc.)
-    // Logic: Pair up teams to create matches. If odd number of teams, one waits?
-    // For simple roster draw, just list the teams 1, 2, 3...
 
     teams.forEach((team, index) => {
         const teamCard = document.createElement('div');
