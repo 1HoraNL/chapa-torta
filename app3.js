@@ -471,9 +471,11 @@ function getConfirmedPlayers() {
 
 // Generate Teams Logic
 generateTeamsBtn.addEventListener('click', () => {
-    // Play sound effect
+    // Play sound effect (DESATIVADO TEMPORARIAMENTE)
+    /*
     const audio = new Audio('peido.mp3');
     audio.play().catch(e => console.log('Audio play failed:', e));
+    */
 
     const { mainList: players } = getSplitLists();
 
