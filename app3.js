@@ -389,6 +389,10 @@ function getConfirmedPlayers() {
 
 // Generate Teams Logic
 generateTeamsBtn.addEventListener('click', () => {
+    // Play sound effect
+    const audio = new Audio('peido.mp3');
+    audio.play().catch(e => console.log('Audio play failed:', e));
+
     const players = getConfirmedPlayers();
 
     if (players.length < 2) {
