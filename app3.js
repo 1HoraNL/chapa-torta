@@ -205,6 +205,7 @@ function getSplitLists() {
 }
 
 // Set Player Status
+// Set Player Status
 async function setPlayerStatus(playerName, status) {
     if (!currentGameId) {
         console.warn('Game ID missing, attempting to re-initialize...');
@@ -217,51 +218,82 @@ async function setPlayerStatus(playerName, status) {
 
     const currentStatus = playerStatus[playerName];
 
-    // If clicking the same button, remove status
-    if (currentStatus === status) {
-        // Delete from database
-        const { error } = await supabase
-            .from('confirmations')
-            .delete()
-            .eq('game_id', currentGameId)
-            .eq('player_name', playerName);
+    // --- OPTIMISTIC UPDATE START ---
+    // Save previous state for rollback
+    const previousStatus = currentStatus;
 
-        if (!error) {
-            playerStatus[playerName] = null;
+    // Toggle logic: If clicking same status, remove it (set to null)
+    let newStatus = status;
+    if (currentStatus === status) {
+        newStatus = null;
+    }
+
+    // 1. Update local state immediately
+    playerStatus[playerName] = newStatus;
+
+    // 2. Update Confirmed Queue locally for immediate ordering (simplified: append to end if confirmed)
+    if (newStatus === 'confirmed') {
+        // Only push if not already there to avoid duplicates in optimistic state
+        if (!confirmedQueue.includes(playerName)) {
+            confirmedQueue.push(playerName);
         }
     } else {
-        // Delete first to ensure new created_at timestamp (move to end of queue)
-        await supabase
-            .from('confirmations')
-            .delete()
-            .eq('game_id', currentGameId)
-            .eq('player_name', playerName);
+        // Remove from queue if not confirmed
+        confirmedQueue = confirmedQueue.filter(p => p !== playerName);
+    }
 
+    // 3. Render immediately
+    renderRoster();
+    updateCounters();
+    // --- OPTIMISTIC UPDATE END ---
 
-        // Insert new record only if status is not null
-        if (status) {
+    try {
+        if (newStatus === null) {
+            // Delete from database
+            const { error } = await supabase
+                .from('confirmations')
+                .delete()
+                .eq('game_id', currentGameId)
+                .eq('player_name', playerName);
+
+            if (error) throw error;
+
+        } else {
+            // Delete first to ensure new created_at timestamp (move to end of queue)
+            // Even without created_at column, re-inserting usually puts it at the end of default select if no order specified, 
+            // or simply ensures clean state.
+            await supabase
+                .from('confirmations')
+                .delete()
+                .eq('game_id', currentGameId)
+                .eq('player_name', playerName);
+
+            // Insert new record
             const { error } = await supabase
                 .from('confirmations')
                 .insert([{
                     game_id: currentGameId,
                     player_name: playerName,
-                    status: status
+                    status: newStatus
                 }]);
 
-            if (!error) {
-                playerStatus[playerName] = status;
-            }
-        } else {
-            playerStatus[playerName] = null;
+            if (error) throw error;
         }
 
-        if (!error) {
-            playerStatus[playerName] = status;
-        }
+        // Background sync to ensure consistency (optional, can be done later or relies on realtime)
+        // We wait a bit or let Realtime handle it. 
+        // For now, let's call loadConfirmations to be sure, but user already sees green.
+        await loadConfirmations();
+        renderRoster(); // Re-render with server truth
+
+    } catch (error) {
+        console.error('Error updating status:', error);
+        // Rollback on error
+        playerStatus[playerName] = previousStatus;
+        alert('Erro ao atualizar status. Tente novamente.');
+        renderRoster();
+        updateCounters();
     }
-
-    await loadConfirmations(); // Reload to get fresh server order
-    renderRoster();
 }
 
 // Update Counters
