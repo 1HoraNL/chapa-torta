@@ -54,30 +54,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize Game
 async function initializeGame() {
-    const nextSunday = getNextSundayFull();
+    try {
+        const nextSunday = getNextSundayFull();
 
-    // Check if game exists for this Sunday
-    const { data: existingGame, error: fetchError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('game_date', nextSunday)
-        .single();
-
-    if (existingGame) {
-        currentGameId = existingGame.id;
-    } else {
-        // Create new game
-        const { data: newGame, error: insertError } = await supabase
+        // Check if game exists for this Sunday
+        const { data: existingGame, error: fetchError } = await supabase
             .from('games')
-            .insert([{ game_date: nextSunday, status: 'open' }])
-            .select()
+            .select('*')
+            .eq('game_date', nextSunday)
             .single();
 
-        if (newGame) {
-            currentGameId = newGame.id;
-        } else {
-            console.error('Error creating game:', insertError);
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "Row not found"
+            throw fetchError;
         }
+
+        if (existingGame) {
+            currentGameId = existingGame.id;
+        } else {
+            // Create new game
+            const { data: newGame, error: insertError } = await supabase
+                .from('games')
+                .insert([{ game_date: nextSunday, status: 'open' }])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+
+            if (newGame) {
+                currentGameId = newGame.id;
+            }
+        }
+
+    } catch (error) {
+        console.error('CRITICAL ERROR initializing game:', error);
+        nextGameInfo.textContent = 'Erro ao conectar. Recarregue a página.';
+        nextGameInfo.style.color = 'red';
+        alert('Erro de conexão com o sistema. Por favor, verifique sua internet e recarregue a página.\n\nDetalhes: ' + (error.message || 'Erro desconhecido'));
     }
 }
 
@@ -85,26 +97,38 @@ async function initializeGame() {
 async function loadConfirmations() {
     if (!currentGameId) return;
 
-    const { data, error } = await supabase
-        .from('confirmations')
-        .select('player_name, status, created_at')
-        .eq('game_id', currentGameId)
-        .order('created_at', { ascending: true });
+    try {
+        const { data, error } = await supabase
+            .from('confirmations')
+            .select('player_name, status')
+            .eq('game_id', currentGameId)
+            // Tabela não tem created_at, usando id para manter ordem de inserção (se id for serial)
+            // Se id não existir, remover o .order completamente
+            .order('id', { ascending: true });
 
-    if (data) {
-        confirmedQueue = []; // Reset queue
-        playerStatus = {}; // Reset status map
+        if (error) throw error;
 
-        // Reset to initial null state first
-        defaultRoster.forEach(player => playerStatus[player] = null);
+        if (data) {
+            confirmedQueue = []; // Reset queue
+            playerStatus = {}; // Reset status map
 
-        data.forEach(confirmation => {
-            playerStatus[confirmation.player_name] = confirmation.status;
-            if (confirmation.status === 'confirmed') {
-                confirmedQueue.push(confirmation.player_name);
-            }
-        });
-        updateCounters();
+            // Reset to initial null state first
+            defaultRoster.forEach(player => playerStatus[player] = null);
+
+            data.forEach(confirmation => {
+                playerStatus[confirmation.player_name] = confirmation.status;
+                if (confirmation.status === 'confirmed') {
+                    confirmedQueue.push(confirmation.player_name);
+                }
+            });
+            updateCounters();
+        }
+    } catch (error) {
+        console.error('Error loading confirmations:', error);
+        // Display detailed error for debugging
+        const errorMsg = error.message || JSON.stringify(error) || 'Erro desconhecido';
+        nextGameInfo.textContent = `Erro: ${errorMsg}`;
+        nextGameInfo.style.color = 'red';
     }
 }
 
@@ -182,7 +206,14 @@ function getSplitLists() {
 
 // Set Player Status
 async function setPlayerStatus(playerName, status) {
-    if (!currentGameId) return;
+    if (!currentGameId) {
+        console.warn('Game ID missing, attempting to re-initialize...');
+        await initializeGame();
+        if (!currentGameId) {
+            alert('Erro: Jogo não inicializado. Tente recarregar a página.');
+            return;
+        }
+    }
 
     const currentStatus = playerStatus[playerName];
 
