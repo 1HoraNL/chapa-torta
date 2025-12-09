@@ -237,14 +237,23 @@ async function setPlayerStatus(playerName, status) {
             .eq('game_id', currentGameId)
             .eq('player_name', playerName);
 
-        // Insert new record
-        const { error } = await supabase
-            .from('confirmations')
-            .insert([{
-                game_id: currentGameId,
-                player_name: playerName,
-                status: status
-            }]);
+
+        // Insert new record only if status is not null
+        if (status) {
+            const { error } = await supabase
+                .from('confirmations')
+                .insert([{
+                    game_id: currentGameId,
+                    player_name: playerName,
+                    status: status
+                }]);
+
+            if (!error) {
+                playerStatus[playerName] = status;
+            }
+        } else {
+            playerStatus[playerName] = null;
+        }
 
         if (!error) {
             playerStatus[playerName] = status;
@@ -333,7 +342,7 @@ function sendToWhatsApp() {
 
     // Show who didn't respond
     if (noResponse.length > 0) {
-        message += '\n❔ *Sem confirmacao:*\n';
+        message += '\n⚪ *Sem confirmacao:*\n';
         noResponse.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
