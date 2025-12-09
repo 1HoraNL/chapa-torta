@@ -24,8 +24,18 @@
         </header>
 
         <main class="content-area">
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-target="confirmationSection">
+                    <i class="fa-solid fa-check-to-slot"></i> CONFIRMAÇÃO
+                </button>
+                <button class="nav-tab" data-target="drawSection">
+                    <i class="fa-solid fa-shuffle"></i> SORTEIO
+                </button>
+            </div>
+
             <!-- Confirmation Section -->
-            <section id="confirmationSection">
+            <section id="confirmationSection" class="active-section">
                 <div class="tab-header">
                     <h2><i class="fa-solid fa-clipboard-list"></i> BORA CONFIRMAR?</h2>
                     <p class="tab-subtitle game-time">
@@ -61,6 +71,34 @@
                     <button id="sendConfirmationBtn" class="btn-whatsapp">
                         <i class="fa-brands fa-whatsapp"></i> ENVIAR NO ZAP
                     </button>
+                </div>
+            </section>
+
+            <!-- Draw Section -->
+            <section id="drawSection" class="hidden-section">
+                <div class="tab-header">
+                    <h2><i class="fa-solid fa-people-group"></i> SORTEIO DE TIMES</h2>
+                </div>
+
+                <div class="draw-controls">
+                    <div class="control-group">
+                        <label>Jogadores Confirmados:</label>
+                        <div id="playersForDrawCount" class="badge">0</div>
+                    </div>
+                </div>
+
+                <div id="confirmedPlayersList" class="confirmed-list-container">
+                    <!-- Names will be injected here -->
+                </div>
+
+                <div class="draw-actions">
+                    <button id="generateTeamsBtn" class="btn-primary">
+                        <i class="fa-solid fa-shuffle"></i> SORTEAR TIMES
+                    </button>
+                </div>
+
+                <div id="teamsResult" class="teams-container">
+                    <!-- Teams will appear here -->
                 </div>
             </section>
         </main>

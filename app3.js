@@ -9,7 +9,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const defaultRoster = [
     "Alberto", "Amarildo", "Arthur",
     "Batata", "Caleffi", "Callefinho",
-    "Gilson", "Pedro", "Rafael", "Rodrigo", "Vinicius"
+    "Diego", "Gilson", "Pedro", "Rafael", "Rodrigo", "Vinicius"
 ];
 
 let currentGameId = null;
@@ -225,18 +225,17 @@ function sendToWhatsApp() {
     const date = getNextSunday();
     const isPastDeadline = isAfterDeadline();
 
-    // Using simple, universally compatible emojis
-    let message = '*Chapa Torta - Confirmação*\n\n';
-    message += '⚽⚽⚽⚽⚽⚽⚽⚽\n⚽⚽⚽⚽⚽⚽⚽⚽\n\n\n';
-    message += '📅 *Data:* ' + date + ' (Dom)\n';
-    message += '⏰ *Horas:* 07 às 09\n';
-    message += '🏟 *Quadra:* JJ1\n\n';
+    // Listagem simples sem emojis para garantir compatibilidade
+    let message = '*Chapa Torta - Confirmacao*\n\n';
+    message += 'Data: ' + date + ' (Dom)\n';
+    message += 'Horas: 07 as 09\n';
+    message += 'Quadra: JJ1\n\n';
 
     if (!isPastDeadline) {
-        message += '⏳ *Confirmar até Sáb. às 14h*\n\n';
+        message += 'Confirmar ate Sab. as 14h\n\n';
     }
 
-    message += '\n✅ *Confirmados:*\n\n';
+    message += '\n*Confirmados:*\n';
 
     confirmed.sort().forEach((name, index) => {
         const num = String(index + 1).padStart(2, '0');
@@ -250,7 +249,7 @@ function sendToWhatsApp() {
 
     // Show absent (people who explicitly said they won't come)
     if (absent.length > 0) {
-        message += '\n\n❌ *Ausentes:*\n\n';
+        message += '\n*Ausentes:*\n';
         absent.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
@@ -259,7 +258,7 @@ function sendToWhatsApp() {
 
     // Show who didn't respond
     if (noResponse.length > 0) {
-        message += '\n\n⚪ *Sem confirmação:*\n\n';
+        message += '\n*Sem confirmacao:*\n';
         noResponse.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
@@ -267,12 +266,13 @@ function sendToWhatsApp() {
     }
 
     // Add link at the end
-    message += '\n\n🔗 *Confirme sua presença:*\n\n';
+    message += '\n\n*Confirme sua presenca:*\n';
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
 
     // Use location.href instead of window.open for better mobile compatibility
+
     window.location.href = whatsappUrl;
 }
 
@@ -324,4 +324,120 @@ function getNextSundayDate() {
     const nextSunday = new Date(today);
     nextSunday.setDate(today.getDate() + daysUntilSunday);
     return nextSunday;
+}
+
+/* ==========================================
+   NAVIGATION & DRAW LOGIC
+   ========================================== */
+
+// DOM Elements for Navigation and Draw
+const navTabs = document.querySelectorAll('.nav-tab');
+const sections = document.querySelectorAll('section');
+const playersForDrawCount = document.getElementById('playersForDrawCount');
+const confirmedPlayersList = document.getElementById('confirmedPlayersList');
+const generateTeamsBtn = document.getElementById('generateTeamsBtn');
+const teamsResult = document.getElementById('teamsResult');
+
+// Navigation Tab Logic
+navTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Remove active class from all tabs
+        navTabs.forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        tab.classList.add('active');
+
+        // Hide all sections
+        sections.forEach(section => {
+            section.classList.remove('active-section');
+            section.classList.add('hidden-section');
+        });
+
+        // Show target section
+        const targetId = tab.getAttribute('data-target');
+        const targetSection = document.getElementById(targetId);
+        targetSection.classList.remove('hidden-section');
+        targetSection.classList.add('active-section');
+
+        // If switching to Draw section, update count
+        if (targetId === 'drawSection') {
+            updateDrawSection();
+        }
+    });
+});
+
+// Update Draw Section Info
+function updateDrawSection() {
+    const confirmedPlayers = getConfirmedPlayers();
+    playersForDrawCount.textContent = confirmedPlayers.length;
+
+    // Show names of confirmed players
+    if (confirmedPlayers.length > 0) {
+        confirmedPlayersList.innerHTML = confirmedPlayers.map(player =>
+            `<span class="confirmed-player-tag">${player}</span>`
+        ).join('');
+    } else {
+        confirmedPlayersList.innerHTML = '<span class="empty-message">Nenhum jogador confirmado ainda.</span>';
+    }
+
+    teamsResult.innerHTML = ''; // Clear previous results
+}
+
+// Get Confirmed Players List
+function getConfirmedPlayers() {
+    return defaultRoster.filter(player => playerStatus[player] === 'confirmed');
+}
+
+// Generate Teams Logic
+generateTeamsBtn.addEventListener('click', () => {
+    const players = getConfirmedPlayers();
+
+    if (players.length < 2) {
+        alert('É necessário pelo menos 2 jogadores confirmados para realizar o sorteio!');
+        return;
+    }
+
+    // Shuffle players (Fisher-Yates algorithm)
+    const shuffled = [...players];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Generate Teams (Duplas)
+    // Generate Teams (Duplas)
+    const teams = [];
+    while (shuffled.length > 0) {
+        // Sempre faz duplas (ou um sozinho se sobrar)
+        teams.push(shuffled.splice(0, 2));
+    }
+
+    displayTeams(teams);
+});
+
+// Display Teams
+function displayTeams(teams) {
+    teamsResult.innerHTML = '';
+
+    // Create games (Team 1 vs Team 2, etc.)
+    // Logic: Pair up teams to create matches. If odd number of teams, one waits?
+    // For simple roster draw, just list the teams 1, 2, 3...
+
+    teams.forEach((team, index) => {
+        const teamCard = document.createElement('div');
+        teamCard.className = 'game-match-card';
+
+        let teamHtml = `
+            <div class="game-header">DUPLA ${index + 1}</div>
+            <div class="game-teams">
+                <div class="team">
+                    <div class="team-players">
+                        ${team.map(p => `<div>${p}</div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        teamCard.innerHTML = teamHtml;
+        teamsResult.appendChild(teamCard);
+    });
 }

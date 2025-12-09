@@ -310,3 +310,217 @@ body {
         gap: 1rem;
     }
 }
+
+/* Navigation Tabs */
+.nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.nav-tab {
+    background: transparent;
+    border: 2px solid #444;
+    color: #AAA;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-tab:hover {
+    border-color: var(--primary);
+    color: #FFF;
+}
+
+.nav-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #000;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+}
+
+/* Sections Visibility */
+.active-section {
+    display: block;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.hidden-section {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Draw Section Controls */
+.draw-controls {
+    background: #1a1a1a;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #333;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.control-group label {
+    font-weight: 500;
+    color: #AAA;
+}
+
+.badge {
+    background: #333;
+    color: var(--primary);
+    padding: 0.2rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    border: 1px solid #444;
+}
+
+.draw-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+/* Confirmed List in Draw Section */
+.confirmed-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px dashed #444;
+}
+
+.confirmed-player-tag {
+    background: #333;
+    color: #FFF;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid #555;
+    display: flex;
+    align-items: center;
+}
+
+.confirmed-player-tag::before {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    margin-right: 0.5rem;
+    color: var(--success);
+}
+
+.empty-message {
+    color: #888;
+    font-style: italic;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #000;
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(255, 204, 0, 0.5);
+}
+
+/* Teams Result */
+.teams-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.game-match-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border-left: 4px solid var(--primary);
+}
+
+.game-header {
+    background: #252525;
+    padding: 0.8rem;
+    text-align: center;
+    font-weight: 700;
+    color: var(--primary);
+    border-bottom: 1px solid #333;
+}
+
+.game-teams {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    width: 100%;
+}
+
+.team-players {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #FFF;
+}
+
+.vs-badge {
+    background: #000;
+    color: #AAA;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: 1px solid #333;
+}
