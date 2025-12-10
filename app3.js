@@ -332,17 +332,15 @@ function sendToWhatsApp() {
     const date = getNextSunday();
     const isPastDeadline = isAfterDeadline();
 
-    // Listagem com emojis pontuais
-    let message = '*Chapa Torta - Confirmacao* ⚽\n\n';
-    message += '📅 Data: ' + date + ' (Dom)\n';
-    message += '⏰ Horas: 07 as 09\n';
-    message += '🏟️ Quadra: JJ1\n\n';
+    // Listagem limpa sem emojis
+    let message = '*Chapa Torta*\n\n';
+    message += '*Data:* ' + date + ' (Dom)\n';
+    message += '*Horas:* 07 as 09\n';
+    message += '*Quadra:* JJ1\n\n';
 
-    if (!isPastDeadline) {
-        message += '⚠️ Confirmar ate Sab. as 14h\n\n';
-    }
+    message += 'Confirmar até Sàb. às 14h\n\n';
 
-    message += '\n✅ *Confirmados:*\n';
+    message += '*Confirmados:*\n';
 
     mainList.forEach((name, index) => {
         const num = String(index + 1).padStart(2, '0');
@@ -356,16 +354,16 @@ function sendToWhatsApp() {
 
     // Show absent 
     if (absent.length > 0) {
-        message += '\n❌ *Ausentes:*\n';
+        message += '\n*Ausentes:*\n';
         absent.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
         });
     }
 
-    // Show Excedentes (Waitlist) AFTER Absents as requested
+    // Show Excedentes (Waitlist)
     if (waitList.length > 0) {
-        message += '\n⏳ *Excedentes:*\n';
+        message += '\n*Excedentes:*\n';
         waitList.forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
@@ -374,7 +372,7 @@ function sendToWhatsApp() {
 
     // Show who didn't respond
     if (noResponse.length > 0) {
-        message += '\n⚪ *Sem confirmacao:*\n';
+        message += '\n*Sem confirmação:*\n';
         noResponse.sort().forEach((name, index) => {
             const num = String(index + 1).padStart(2, '0');
             message += num + '- ' + name + '\n';
@@ -382,7 +380,7 @@ function sendToWhatsApp() {
     }
 
     // Add link at the end with extra spacing
-    message += '\n\n*Confirme sua presenca:*\n\n';
+    message += '\n\nConfirme sua presenca:\n\n';
     message += 'https://1horanl.github.io/chapa-torta/index3.html';
 
     const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
